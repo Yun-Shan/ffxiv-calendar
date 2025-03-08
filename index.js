@@ -64,7 +64,7 @@ export function getExtendEorzeaClock(localDate) {
  * @return {{eorzeaClock: EorzeaClock, running: boolean, updateCallback?: (clock: EorzeaClock) => void, stop: () => void}}
  */
 export function createAutoClock(realTimeOffset = DEFAULT_REAL_TIME_OFFSET) {
-  // 把魂晶计算器的减20571艾欧泽亚毫秒改为了减480本地毫秒，体感更贴近游戏时间变动(但仍然不能完全贴合)
+  // 把魂晶计算器的减20571艾欧泽亚毫秒改为了减480本地毫秒，体感更贴近游戏时间变动(但仍然不能完全贴合，仍有明显偏移，由于偏移量在变化找不到更合适的值，希望有人能找出来)
   // 需要注意的是我们并不清楚为什么要微调时间，怀疑极有可能是时钟同步的问题
   let timeout;
   const ret = {
