@@ -1,0 +1,43 @@
+import { EorzeaClock } from './src/time';
+import { findNextMoonTime } from './src/moon';
+import { findNextWeatherTime } from './src/weather';
+
+export interface ExtendEorzeaClock extends EorzeaClock {
+  formatDateTime(): string;
+  getMoonPhase(): string;
+  nextMoon(): ReturnType<typeof findNextMoonTime>[0];
+  getWeather(locName: string, cache?: boolean): string | null;
+  nextWeather(locName: string, cache?: boolean): Required<ReturnType<typeof findNextWeatherTime>>[0] | null;
+}
+
+/**
+ * 将本地时间转换为艾欧泽亚时间，附带所有时间细节，附带实用工具方法
+ *
+ * @param localDate {Date}
+ * @return {EorzeaClock}
+ */
+export function getExtendEorzeaClock(localDate?: Date): ExtendEorzeaClock;
+
+/**
+ * 寻找未来的窗口期
+ *
+ * @param {{ etRange?: [number, number], weather?: string, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
+ * @param {number=} cooldown 冷却时间，冷却时间内即使到了窗口期也不会触发，单位：秒
+ * @param {number} count 要寻找几个窗口期，默认为1
+ * @param {Date=} maxLocalDate 最大现实时间，避免找不到窗口期无限循环
+ * @param {Date=} now 指定寻找的起始时间，不指定时使用当前时间
+ */
+export function findNextTimeByCond(
+  cond: {
+    etRange?: [number, number];
+    weather?: string;
+    loc?: string;
+    moon?: string;
+  },
+  cooldown?: number,
+  count?: number, maxLocalDate?: Date | undefined, now?: Date | undefined
+): Date[];
+
+export * from './src/time';
+export * from './src/weather.js';
+export * from './src/moon.js';

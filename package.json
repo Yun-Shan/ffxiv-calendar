@@ -1,0 +1,16 @@
+{
+  "name": "ffxiv-calendar",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "rfc6902": "^5.1.2",
+    "typescript": "^5.8.2"
+  }
+}
