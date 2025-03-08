@@ -72,7 +72,15 @@ export function createAutoClock(realTimeOffset = DEFAULT_REAL_TIME_OFFSET) {
   const updateTime = () => {
     if (!ret.running) return;
     const now = new Date(Date.now() - realTimeOffset);
+    const oldClock = ret.eorzeaClock;
     ret.eorzeaClock = getExtendEorzeaClock(now);
+    // 复制缓存 减少重复计算
+    if (oldClock.hour === ret.eorzeaClock.hour) {
+      ret.eorzeaClock._moonPhase = oldClock._moonPhase;
+      ret.eorzeaClock._nextMoon = oldClock._nextMoon;
+      ret.eorzeaClock._weather = oldClock._weather;
+      ret.eorzeaClock._nextWeather = oldClock._nextWeather;
+    }
 
     // nextEorzeaMinute as local ms
     const nextEorzeaMinute = (60_000 - (ret.eorzeaClock.second * 1000 + ret.eorzeaClock.millisecond)) * 70 / 1440;
