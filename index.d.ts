@@ -19,6 +19,21 @@ export interface ExtendEorzeaClock extends EorzeaClock {
 export function getExtendEorzeaClock(localDate?: Date): ExtendEorzeaClock;
 
 /**
+ * 创建一个会自动更新的ET时钟，会自动通过`setTimeout`更新当前时间
+ *
+ * WARNING: 不用的时候请务必调用stop函数停止更新
+ *
+ * @param realTimeOffset {number} 用于调整时间偏移使结果更贴近游戏内时间，默认为-480
+ * @return {{eorzeaClock: ExtendEorzeaClock, running: boolean, updateCallback?: (ExtendEorzeaClock) => void, stop: () => void}}
+ */
+export function createAutoClock(realTimeOffset?: number): {
+  eorzeaClock: ExtendEorzeaClock;
+  running: boolean;
+  updateCallback?: (ExtendEorzeaClock: any) => void;
+  stop: () => void;
+};
+
+/**
  * 寻找未来的窗口期
  *
  * @param {{ etRange?: [number, number], weather?: string, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc

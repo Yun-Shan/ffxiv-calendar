@@ -22,21 +22,6 @@ export interface EorzeaClock {
 export function calcEorzeaClock(localDate?: Date): EorzeaClock;
 
 /**
- * 创建一个会自动更新的ET时钟，会自动通过`setTimeout`更新当前时间
- *
- * WARNING: 不用的时候请务必调用stop函数停止更新
- *
- * @param realTimeOffset {number} 用于调整时间偏移使结果更贴近游戏内时间，默认为-480
- * @return {{eorzeaClock: EorzeaClock, running: boolean, updateCallback?: (EorzeaClock) => void, stop: () => void}}
- */
-export function createAutoClock(realTimeOffset?: number): {
-    eorzeaClock: EorzeaClock;
-    running: boolean;
-    updateCallback?: (EorzeaClock: any) => void;
-    stop: () => void;
-};
-
-/**
  * ET转LT
  *
  * @param date {Date}
