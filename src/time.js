@@ -35,7 +35,7 @@ export const DEFAULT_REAL_TIME_OFFSET = -480;
  * @param localDate {Date}
  * @return {EorzeaClock}
  */
-export function calcEorzeaClock(localDate = new Date(Date.now() - DEFAULT_REAL_TIME_OFFSET)) {
+export function calcEorzeaClock(localDate = new Date(Date.now() + DEFAULT_REAL_TIME_OFFSET)) {
   // 代码参考魂晶计算器，https://ff14db.games.sina.com.cn/index.html
   // 在魂晶计算器的基础上略作优化(去除了无法理解的艾欧泽亚起始时间，修改时间偏移(放在了createAutoClock中))
   const et = localTimeToEorzea(localDate);

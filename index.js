@@ -78,7 +78,7 @@ export function createAutoClock(realTimeOffset = DEFAULT_REAL_TIME_OFFSET) {
   };
   const updateTime = () => {
     if (!ret.running) return;
-    const now = new Date(Date.now() - realTimeOffset);
+    const now = new Date(Date.now() + realTimeOffset);
     const oldClock = ret.eorzeaClock;
     ret.eorzeaClock = getExtendEorzeaClock(now);
     // 复制缓存 减少重复计算
