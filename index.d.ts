@@ -41,6 +41,8 @@ export function createAutoClock(realTimeOffset?: number): {
  * @param {number} count 要寻找几个窗口期，默认为1
  * @param {Date=} maxLocalDate 最大现实时间，避免找不到窗口期无限循环
  * @param {Date=} now 指定寻找的起始时间，不指定时使用当前时间
+ *
+ * @return {{date: Date, duration: number}[]} date为时间点，duration为持续时间(单位：毫秒)
  */
 export function findNextTimeByCond(
   cond: {
@@ -51,7 +53,7 @@ export function findNextTimeByCond(
   },
   cooldown?: number,
   count?: number, maxLocalDate?: Date | undefined, now?: Date | undefined
-): Date[];
+): {date: Date, duration: number}[];
 
 export * from './src/time';
 export * from './src/weather.js';
