@@ -24,12 +24,12 @@ export function getExtendEorzeaClock(localDate?: Date): ExtendEorzeaClock;
  * WARNING: 不用的时候请务必调用stop函数停止更新
  *
  * @param realTimeOffset {number} 用于调整时间偏移使结果更贴近游戏内时间，默认为-480
- * @return {{eorzeaClock: ExtendEorzeaClock, running: boolean, updateCallback?: (ExtendEorzeaClock) => void, stop: () => void}}
+ * @return {{eorzeaClock: ExtendEorzeaClock, running: boolean, updateCallback?: (clock: ExtendEorzeaClock) => void, stop: () => void}}
  */
 export function createAutoClock(realTimeOffset?: number): {
   eorzeaClock: ExtendEorzeaClock;
   running: boolean;
-  updateCallback?: (ExtendEorzeaClock: any) => void;
+  updateCallback?: (clock: ExtendEorzeaClock) => void;
   stop: () => void;
 };
 

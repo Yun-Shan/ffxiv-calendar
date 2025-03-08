@@ -1,4 +1,11 @@
-import { calcEorzeaClock, DEFAULT_REAL_TIME_OFFSET, eorzeaTimeToLocal, formatEorzeaClock, localTimeToEorzea } from './src/time.js';
+import {
+  calcEorzeaClock,
+  DEFAULT_REAL_TIME_OFFSET,
+  eorzeaRatio,
+  eorzeaTimeToLocal,
+  formatEorzeaClock,
+  localTimeToEorzea
+} from './src/time.js';
 import { calcMoonPhase, findNextMoonTime } from './src/moon.js';
 import { findNextWeatherTime, forecastWeather } from './src/weather.js';
 
@@ -54,7 +61,7 @@ export function getExtendEorzeaClock(localDate) {
  * WARNING: 不用的时候请务必调用stop函数停止更新
  *
  * @param realTimeOffset {number} 用于调整时间偏移使结果更贴近游戏内时间，默认为-480
- * @return {{eorzeaClock: EorzeaClock, running: boolean, updateCallback?: (EorzeaClock) => void, stop: () => void}}
+ * @return {{eorzeaClock: EorzeaClock, running: boolean, updateCallback?: (clock: EorzeaClock) => void, stop: () => void}}
  */
 export function createAutoClock(realTimeOffset = DEFAULT_REAL_TIME_OFFSET) {
   // 把魂晶计算器的减20571艾欧泽亚毫秒改为了减480本地毫秒，体感更贴近游戏时间变动(但仍然不能完全贴合)
@@ -83,7 +90,7 @@ export function createAutoClock(realTimeOffset = DEFAULT_REAL_TIME_OFFSET) {
     }
 
     // nextEorzeaMinute as local ms
-    const nextEorzeaMinute = (60_000 - (ret.eorzeaClock.second * 1000 + ret.eorzeaClock.millisecond)) * 70 / 1440;
+    const nextEorzeaMinute = (60_000 - (ret.eorzeaClock.second * 1000 + ret.eorzeaClock.millisecond)) / eorzeaRatio;
     timeout = setTimeout(() => updateTime(), nextEorzeaMinute);
     if (typeof ret.updateCallback === 'function') {
       ret.updateCallback(ret.eorzeaClock);
