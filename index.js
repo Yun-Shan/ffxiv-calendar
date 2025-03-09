@@ -7,7 +7,7 @@ import {
   localTimeToEorzea
 } from './src/time.js';
 import { calcMoonPhase, findNextMoonTime } from './src/moon.js';
-import { findNextWeatherTime, forecastWeather } from './src/weather.js';
+import { findNextWeatherTime, forecastWeather, getWeatherInterval } from './src/weather.js';
 
 export * from './src/time.js';
 export * from './src/weather.js';
@@ -144,7 +144,7 @@ function getFilterWeathers(
 /**
  * 寻找未来的窗口期
  *
- * @param {{ etRange?: [number, number], weather?: string, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
+ * @param {{ etRange?: [number, number], weather?: WeatherCond, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
  * @param {number=} cooldown 冷却时间，冷却时间内即使到了窗口期也不会触发，单位：秒
  * @param {number=} count 要寻找几个窗口期，默认为1
  * @param {Date=} maxLocalDate 最大现实时间，避免找不到窗口期无限循环
@@ -159,24 +159,31 @@ export function findNextTimeByCond(
   maxLocalDate,
   now,
 ) {
-  if (cooldown <= 0) return findNextTimeByCondWithoutCD(cond, count, maxLocalDate, now);
-  cooldown = cooldown * 1000;
+  cooldown = cooldown > 0 ? cooldown * 1000 : 0;
   /** @type {{ date: Date, duration: number }[]} */
   let finalResult = [];
   let timeOffset = now;
+  let lastTime = 0;
   while (finalResult.length < count) {
     if (finalResult.length > 0) {
       timeOffset = new Date(finalResult[finalResult.length - 1].date.getTime() + 1000);
     }
     const filteredResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset)
       .reduce((acc, curr) => {
-        if (curr.date.getTime() - acc.lastTime > cooldown) {
-          acc.lastTime = curr.date.getTime();
-          acc.list.push(curr);
+        if ((curr.date.getTime() - lastTime) > cooldown) {
+          lastTime = curr.date.getTime();
+          let mergeWindow = false;
+          if (acc.length > 0) {
+            const last = acc[acc.length - 1];
+            if (last.date.getTime() + last.duration === curr.date.getTime()) {
+              last.duration += curr.duration;
+              mergeWindow = true;
+            }
+          }
+          if (!mergeWindow) acc.push(curr);
         }
         return acc;
-      }, { lastTime: 0, list: [] })
-      .list;
+      }, []);
     finalResult.push(...filteredResult);
   }
   return finalResult.slice(0, count);
@@ -185,7 +192,7 @@ export function findNextTimeByCond(
 /**
  * 寻找未来的窗口期，不考虑CD
  *
- * @param {{ etRange?: [number, number], weather?: string, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
+ * @param {{ etRange?: [number, number], weather?: WeatherCond, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
  * @param {number=} count 要寻找几个窗口期，默认为1
  * @param {Date=} maxLocalDate 最大现实时间，避免找不到窗口期无限循环
  * @param {Date=} now 指定寻找的起始时间，不指定时使用当前时间
@@ -208,7 +215,9 @@ function findNextTimeByCondWithoutCD(
   }
   /** @type {(Date) => number} */
   const getWeatherEndLocalTime = (date) => {
-    return eorzeaTimeToLocal(localTimeToEorzea(date.getTime()) + 8 * 60 * 60 * 1000);
+    const et = getWeatherInterval(localTimeToEorzea(date));
+    et.setUTCHours(et.getUTCHours() + 8);
+    return eorzeaTimeToLocal(et.getTime());
   };
   if (!cond.etRange) {
     if (cond.weather && cond.moon) {
