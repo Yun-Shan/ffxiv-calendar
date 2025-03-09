@@ -181,7 +181,7 @@ export function findNextTimeByCond(
  *
  * @return {{date: Date, duration: number}[]} date为时间点，duration为持续时间(单位：毫秒)
  */
-export function findNextTimeByCondWithoutCD(
+function findNextTimeByCondWithoutCD(
   cond,
   count = 1,
   maxLocalDate,
@@ -189,7 +189,7 @@ export function findNextTimeByCondWithoutCD(
 ) {
   if (!cond.etRange && !cond.weather && !cond.moon) throw new Error('empty cond');
   if (cond.weather && !cond.loc) throw new Error('must specify a loc when specify weather');
-  if (cond.etRange && (cond.etRange[0] >= cond.etRange[1] || cond.etRange[1] > 2400)) throw new Error('invalid etRange');
+  if (cond.etRange && (cond.etRange[0] < 0 || cond.etRange[0] >= cond.etRange[1] || cond.etRange[1] > 2400)) throw new Error('invalid etRange');
   if (!now) now = new Date();
   if (!maxLocalDate) {
     maxLocalDate = new Date(now);
