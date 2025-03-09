@@ -67,9 +67,9 @@ export function calcEorzeaClock(date = new Date(Date.now() + DEFAULT_REAL_TIME_O
 
   return  {
     localTime: lt,
-    localTimeDate: new Date(lt),
+    localTimeDate: new Date(Math.round(lt)),
     eorzeaTime: et,
-    eorzeaTimeDate: new Date(et),
+    eorzeaTimeDate: new Date(Math.round(et)),
     month: eorzeaMonth + 1,
     day: eorzeaDay + 1,
     hour: eorzeaHour,
