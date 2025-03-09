@@ -7,7 +7,9 @@ import { eorzeaTimeToLocal, localTimeToEorzea } from './time.js';
  * @typedef {string | { whitelist?: string[], blacklist?: string[], sequence?: string[] }} WeatherCond
  */
 
-const allLocations = Object.keys(locDataByName).filter(it => !/^[0-9]+$/.test(it));
+const allLocations = [...new Set(Object.keys(locDataByName))]
+  .filter(it => !/^[0-9]+$/.test(it))
+  .sort((a, b) => a.localeCompare(b));
 
 /**
  * 获取所有可用的地点名称列表
