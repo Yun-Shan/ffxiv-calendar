@@ -159,16 +159,27 @@ export function findNextTimeByCond(
   maxLocalDate,
   now,
 ) {
-  const result = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, now);
-  if (cooldown <= 0) return result;
+  if (cooldown <= 0) return findNextTimeByCondWithoutCD(cond, count, maxLocalDate, now);
   cooldown = cooldown * 1000;
-  return result.reduce((acc, curr) => {
-    if (curr.date.getTime() - acc.lastTime > cooldown) {
-      acc.lastTime = curr.date.getTime();
-      acc.list.push(curr);
+  /** @type {{ date: Date, duration: number }[]} */
+  let finalResult = [];
+  let timeOffset = now;
+  while (finalResult.length < count) {
+    if (finalResult.length > 0) {
+      timeOffset = new Date(finalResult[finalResult.length - 1].date.getTime() + 1000);
     }
-    return acc;
-  }, { lastTime: 0, list: [] }).list;
+    const filteredResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset)
+      .reduce((acc, curr) => {
+        if (curr.date.getTime() - acc.lastTime > cooldown) {
+          acc.lastTime = curr.date.getTime();
+          acc.list.push(curr);
+        }
+        return acc;
+      }, { lastTime: 0, list: [] })
+      .list;
+    finalResult.push(...filteredResult);
+  }
+  return finalResult.slice(0, count);
 }
 
 /**
@@ -218,7 +229,7 @@ function findNextTimeByCondWithoutCD(
           result.push(...weathers.map(it => {
             const weatherEndTime = getWeatherEndLocalTime(it.date);
             const endTime = Math.min(weatherEndTime, nextMoonEndLocalDate.getTime());
-            return { date: it.date, duration: endTime - it.date.getTime() };
+            return { date: it.date, duration: Math.round(endTime - it.date.getTime()) };
           }));
           count -= weathers.length;
         }
@@ -227,10 +238,10 @@ function findNextTimeByCondWithoutCD(
     } else if (cond.weather) {
       const loc = cond.loc;
       return findNextWeatherTime(now, loc, cond.weather, count, maxLocalDate)
-        ?.map(it => ({ date: it.date, duration: (8 * 60 * 60 * 1000) / eorzeaRatio }));
+        ?.map(it => ({ date: it.date, duration: Math.round(eorzeaTimeToLocal(8 * 60 * 60 * 1000)) }));
     } else if (cond.moon) {
       return findNextMoonTime(now, cond.moon, count, maxLocalDate)
-        .map(it => ({ date: it.date, duration: (4 * 24 * 60 * 60 * 1000) / eorzeaRatio }));
+        .map(it => ({ date: it.date, duration: Math.round(eorzeaTimeToLocal(4 * 24 * 60 * 60 * 1000)) }));
     }
   } else {
     /** @type {(ExtendEorzeaClock) => number} */
@@ -264,7 +275,7 @@ function findNextTimeByCondWithoutCD(
               const weatherEndTime = getWeatherEndLocalTime(it.date);
               const etEndTime = getEtRangeEndLocalTime(calcEorzeaClock(it.date));
               const endTime = Math.min(weatherEndTime, etEndTime, nextMoonEndLocalDate.getTime());
-              return { date: it.date, duration: endTime - it.date.getTime() };
+              return { date: it.date, duration: Math.round(endTime - it.date.getTime()) };
             }));
             count -= filterWeathers.length;
           }
@@ -292,7 +303,7 @@ function findNextTimeByCondWithoutCD(
             const weatherEndTime = getWeatherEndLocalTime(it.date);
             const etEndTime = getEtRangeEndLocalTime(calcEorzeaClock(it.date));
             const endTime = Math.min(weatherEndTime, etEndTime);
-            return { date: it.date, duration: endTime - it.date.getTime() };
+            return { date: it.date, duration: Math.round(endTime - it.date.getTime()) };
           }));
           count -= filterWeathers.length;
         }
@@ -332,14 +343,20 @@ function findNextTimeByCondWithoutCD(
         while (etRangeStart < nextMoonEndLocalDate.getTime()) {
           if (etRangeStart > nextMoonStartLocalDate.getTime() && etRangeEnd < nextMoonEndLocalDate.getTime()) {
             const date = eorzeaTimeToLocal(new Date(etRangeStart));
-            result.push({ date: date, duration: eorzeaTimeToLocal(etRangeEnd - etRangeStart) });
+            result.push({ date: date, duration: Math.round(eorzeaTimeToLocal(etRangeEnd - etRangeStart)) });
             count--;
           } else if (etRangeStart < nextMoonStartLocalDate.getTime() && etRangeEnd > nextMoonStartLocalDate.getTime()) {
-            result.push({ date: nextMoonStartLocalDate, duration: eorzeaTimeToLocal(etRangeEnd - localTimeToEorzea(nextMoonStartLocalDate.getTime())) });
+            result.push({
+              date: nextMoonStartLocalDate,
+              duration: Math.round(eorzeaTimeToLocal(etRangeEnd - localTimeToEorzea(nextMoonStartLocalDate.getTime())))
+            });
             count--;
           } else if (etRangeStart < nextMoonEndLocalDate.getTime() && etRangeEnd > nextMoonEndLocalDate.getTime()) {
             const date = eorzeaTimeToLocal(etRangeStart);
-            result.push({ date: new Date(date), duration: eorzeaTimeToLocal(localTimeToEorzea(nextMoonEndLocalDate) - etRangeStart) });
+            result.push({
+              date: new Date(date),
+              duration: Math.round(eorzeaTimeToLocal(localTimeToEorzea(nextMoonEndLocalDate) - etRangeStart))
+            });
             count--;
           }
           etRangeStart += 24 * 60 * 60 * 1000;
