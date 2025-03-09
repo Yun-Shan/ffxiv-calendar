@@ -1,6 +1,6 @@
 import { EorzeaClock } from './src/time';
 import { findNextMoonTime } from './src/moon';
-import { findNextWeatherTime } from './src/weather';
+import { findNextWeatherTime, WeatherCond } from './src/weather';
 
 export interface ExtendEorzeaClock extends EorzeaClock {
   formatDateTime(): string;
@@ -36,7 +36,7 @@ export function createAutoClock(realTimeOffset?: number): {
 /**
  * 寻找未来的窗口期
  *
- * @param {{ etRange?: [number, number], weather?: string, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
+ * @param {{ etRange?: [number, number], weather?: WeatherCond, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
  * @param {number=} cooldown 冷却时间，冷却时间内即使到了窗口期也不会触发，单位：秒
  * @param {number=} count 要寻找几个窗口期，默认为1
  * @param {Date=} maxLocalDate 最大现实时间，避免找不到窗口期无限循环
@@ -47,7 +47,7 @@ export function createAutoClock(realTimeOffset?: number): {
 export function findNextTimeByCond(
   cond: {
     etRange?: [number, number];
-    weather?: string;
+    weather?: WeatherCond;
     loc?: string;
     moon?: string;
   },
