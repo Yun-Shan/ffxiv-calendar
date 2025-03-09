@@ -80,15 +80,17 @@ function calculateForecastTarget(localDate) {
  *
  * @param localDate {Date}
  * @param locName {string}
- * @return {string | null} 天气名称，目标区域没有天气变化时返回null
+ * @return {string} 天气名称
  */
 export function forecastWeather(localDate, locName) {
   const loc = locDataByName[locName];
-  if (!loc || !loc.weatherRate) return null;
+  if (!loc || !loc.weatherRate) return FALLBACK_WEATHER;
+  if (loc.weatherRate.length === 1) return loc.weatherRate[0].weather;
 
   const forecastTarget = calculateForecastTarget(localDate);
   const rate = loc.weatherRate.find(r => forecastTarget < r.rate);
-  return rate?.weather ?? null;
+  if (!rate) throw new Error('无法找到指定时间的天气，该错误不应该出现，可能是天气数据有问题');
+  return rate.weather;
 }
 
 /**
