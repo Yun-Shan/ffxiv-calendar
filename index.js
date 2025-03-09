@@ -47,7 +47,7 @@ export function getExtendEorzeaClock(localDate) {
     nextWeather(locName, cache = true) {
       if (!cache) return findNextWeatherTime(localDate, locName);
       if (extendClock._nextWeather[locName] !== undefined) return extendClock._nextWeather[locName];
-      const nextWeatherResult = findNextWeatherTime(localDate, locName);
+      const nextWeatherResult = findNextWeatherTime(localDate, locName, { blacklist: [extendClock.getWeather(locName)] });
       extendClock._nextWeather[locName] = nextWeatherResult ? nextWeatherResult[0] : null;
       return extendClock._nextWeather[locName];
     }
