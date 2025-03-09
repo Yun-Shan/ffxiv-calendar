@@ -127,7 +127,7 @@ function findWeatherTime(
   const loc = locDataByName[locName];
   // 对无天气或只有一个天气的地点特殊处理
   if (!loc?.weatherRate || loc.weatherRate.length < 2) {
-    const allowWeather = loc?.weatherRate[0]?.weather || FALLBACK_WEATHER;
+    const allowWeather = (loc?.weatherRate ? loc.weatherRate[0]?.weather : undefined) || FALLBACK_WEATHER;
     if (!weatherCond) return buildSameWeatherTime(allowWeather, localDate, nextOrPrev, count, false);
     let checkPass = false;
     if (typeof weatherCond === 'string') {
