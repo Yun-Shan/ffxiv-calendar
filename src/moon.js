@@ -56,7 +56,7 @@ function findMoonTime(
   etOffset -= clock.millisecond;
   etOffset -= clock.second * 1000;
   etOffset -= clock.minute * 60 * 1000;
-  etOffset -= Math.max(0, clock.hour - 12) * 60 * 60 * 1000;
+  etOffset -= (clock.hour - 12) * 60 * 60 * 1000;
   const daysOfCycle = Math.floor(daysIntoLunarCycle(clock.eorzeaTime) % 4);
   etOffset -= daysOfCycle * 24 * 60 * 60 * 1000;
 
