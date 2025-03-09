@@ -16,7 +16,7 @@ export interface ExtendEorzeaClock extends EorzeaClock {
 /**
  * 将本地时间转换为艾欧泽亚时间，附带所有时间细节，附带实用工具方法
  *
- * @param localDate {Date}
+ * @param {Date=} localDate
  * @return {EorzeaClock}
  */
 export function getExtendEorzeaClock(localDate?: Date): ExtendEorzeaClock;

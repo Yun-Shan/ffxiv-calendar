@@ -16,10 +16,10 @@ export * from './src/moon.js';
 /**
  * 将本地时间转换为艾欧泽亚时间，附带所有时间细节，附带实用工具方法
  *
- * @param localDate {Date}
+ * @param {Date=} localDate
  * @return {ExtendEorzeaClock}
  */
-export function getExtendEorzeaClock(localDate) {
+export function getExtendEorzeaClock(localDate = new Date(Date.now() + DEFAULT_REAL_TIME_OFFSET)) {
   /** @type {ExtendEorzeaClock & Record<string, unknown>} */
   const extendClock = {
     ...calcEorzeaClock(localDate),
