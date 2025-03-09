@@ -96,7 +96,7 @@ function findWeatherTime(
     // 最多往前/后查找一年现实时间
     untilLocalDate.setUTCFullYear(untilLocalDate.getUTCFullYear() + (nextOrPrev === 'next' ? 1 : -1));
   }
-  const untilEt = localTimeToEorzea(untilLocalDate).getTime();
+  const untilEt = localTimeToEorzea(untilLocalDate.getTime());
   const checkEt = nextOrPrev === 'next' ? (() => eTime.getTime() <= untilEt) : (() => eTime.getTime() >= untilEt);
   while (checkEt() && count-- > 0) {
     /** @type {string} */

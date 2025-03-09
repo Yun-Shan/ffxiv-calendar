@@ -1,16 +1,18 @@
 export interface EorzeaClock {
-    localTime: Date;
-    eorzeaTime: Date;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-    second: number;
-    millisecond: number;
-    monthName: string;
-    monthElement: string;
-    dayElement: string;
-    hourElement: string;
+  localTime: number;
+  localTimeDate: Date;
+  eorzeaTime: number;
+  eorzeaTimeDate: Date;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  millisecond: number;
+  monthName: string;
+  monthElement: string;
+  dayElement: string;
+  hourElement: string;
 }
 
 /**
@@ -22,20 +24,22 @@ export interface EorzeaClock {
 export function calcEorzeaClock(localDate?: Date): EorzeaClock;
 
 /**
- * ET转LT
+ * ET转LT，输出类型取决于输入类型
  *
- * @param date {Date}
- * @return {Date}
+ * @template {Date | number} T
+ * @param date {T}
+ * @return {T}
  */
-export function eorzeaTimeToLocal(date: Date): Date;
+export function eorzeaTimeToLocal<T extends Date | number>(date: T): T;
 
 /**
- * LT转ET
+ * LT转ET，输出类型取决于输入类型
  *
- * @param date {Date}
- * @return {Date}
+ * @template {Date | number} T
+ * @param date {T}
+ * @return {T}
  */
-export function localTimeToEorzea(date: Date): Date;
+export function localTimeToEorzea<T extends Date | number>(date: T): T;
 
 /**
  * 格式化ET为HH:mm的形式

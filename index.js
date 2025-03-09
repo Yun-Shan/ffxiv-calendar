@@ -131,7 +131,7 @@ function getFilterWeathers(
           const hourOffset = (Math.floor(etRange[0] / 100) - Math.floor(etStart / 100)) * 60 * 60 * 1000;
           const minuteOffset = (Math.floor(etRange[0] % 100) - Math.floor(etStart % 100)) * 60 * 1000;
           return {
-            date: eorzeaTimeToLocal(new Date(clock.eorzeaTime.getTime() + hourOffset + minuteOffset)),
+            date: eorzeaTimeToLocal(new Date(clock.eorzeaTime + hourOffset + minuteOffset)),
             weather: it.weather,
           };
         }
@@ -195,12 +195,9 @@ function findNextTimeByCondWithoutCD(
     maxLocalDate = new Date(now);
     maxLocalDate.setUTCFullYear(maxLocalDate.getUTCFullYear() + 1);
   }
+  /** @type {(Date) => number} */
   const getWeatherEndLocalTime = (date) => {
-    return eorzeaTimeToLocal(
-      new Date(
-        localTimeToEorzea(date).getTime() + 8 * 60 * 60 * 1000
-      )
-    );
+    return eorzeaTimeToLocal(localTimeToEorzea(date.getTime()) + 8 * 60 * 60 * 1000);
   };
   if (!cond.etRange) {
     if (cond.weather && cond.moon) {
@@ -210,17 +207,17 @@ function findNextTimeByCondWithoutCD(
       let dateOffset = now;
       while (count > 0 && maxLocalDate.getTime() > dateOffset.getTime()) {
         const nextMoonStartLocalDate = findNextMoonTime(dateOffset, cond.moon, count, maxLocalDate)[0].date;
-        const nextMoonEndLocalDate = eorzeaTimeToLocal(
-          new Date(
-            localTimeToEorzea(nextMoonStartLocalDate).getTime() + 4 * 24 * 60 * 60 * 1000
+        const nextMoonEndLocalDate = new Date(Math.round(
+          eorzeaTimeToLocal(
+            localTimeToEorzea(nextMoonStartLocalDate.getTime()) + 4 * 24 * 60 * 60 * 1000
           )
-        );
+        ));
         dateOffset = new Date(nextMoonEndLocalDate.getTime() + 1000);
         const weathers = findNextWeatherTime(nextMoonStartLocalDate, loc, cond.weather, count, nextMoonEndLocalDate);
         if (weathers) {
           result.push(...weathers.map(it => {
             const weatherEndTime = getWeatherEndLocalTime(it.date);
-            const endTime = Math.min(weatherEndTime.getTime(), nextMoonEndLocalDate.getTime());
+            const endTime = Math.min(weatherEndTime, nextMoonEndLocalDate.getTime());
             return { date: it.date, duration: endTime - it.date.getTime() };
           }));
           count -= weathers.length;
@@ -236,11 +233,12 @@ function findNextTimeByCondWithoutCD(
         .map(it => ({ date: it.date, duration: (4 * 24 * 60 * 60 * 1000) / eorzeaRatio }));
     }
   } else {
+    /** @type {(ExtendEorzeaClock) => number} */
     const getEtRangeEndLocalTime = (clock) => {
       const endETHour = Math.floor(cond.etRange[1] / 100);
       const endETMinute = Math.floor(cond.etRange[1] % 100);
       const ms = ((endETHour - clock.hour) * 60 + (endETMinute - clock.minute)) * 60 * 1000;
-      return eorzeaTimeToLocal(new Date(clock.eorzeaTime.getTime() + ms));
+      return eorzeaTimeToLocal(clock.eorzeaTime + ms);
     };
     if (cond.weather && cond.moon) {
       const loc = cond.loc;
@@ -249,11 +247,11 @@ function findNextTimeByCondWithoutCD(
       let dateOffset = now;
       while (count > 0 && maxLocalDate.getTime() > dateOffset.getTime()) {
         const nextMoonStartLocalDate = findNextMoonTime(dateOffset, cond.moon, count, maxLocalDate)[0].date;
-        const nextMoonEndLocalDate = eorzeaTimeToLocal(
-          new Date(
-            localTimeToEorzea(nextMoonStartLocalDate).getTime() + 4 * 24 * 60 * 60 * 1000
+        const nextMoonEndLocalDate = new Date(Math.round(
+          eorzeaTimeToLocal(
+            localTimeToEorzea(nextMoonStartLocalDate.getTime()) + 4 * 24 * 60 * 60 * 1000
           )
-        );
+        ));
         if (nextMoonStartLocalDate.getTime() < now.getTime()) {
           nextMoonStartLocalDate.setTime(now.getTime());
         }
@@ -265,7 +263,7 @@ function findNextTimeByCondWithoutCD(
             result.push(...filterWeathers.map(it => {
               const weatherEndTime = getWeatherEndLocalTime(it.date);
               const etEndTime = getEtRangeEndLocalTime(calcEorzeaClock(it.date));
-              const endTime = Math.min(weatherEndTime.getTime(), etEndTime.getTime(), nextMoonEndLocalDate.getTime());
+              const endTime = Math.min(weatherEndTime, etEndTime, nextMoonEndLocalDate.getTime());
               return { date: it.date, duration: endTime - it.date.getTime() };
             }));
             count -= filterWeathers.length;
@@ -293,7 +291,7 @@ function findNextTimeByCondWithoutCD(
           result.push(...filterWeathers.map(it => {
             const weatherEndTime = getWeatherEndLocalTime(it.date);
             const etEndTime = getEtRangeEndLocalTime(calcEorzeaClock(it.date));
-            const endTime = Math.min(weatherEndTime.getTime(), etEndTime.getTime());
+            const endTime = Math.min(weatherEndTime, etEndTime);
             return { date: it.date, duration: endTime - it.date.getTime() };
           }));
           count -= filterWeathers.length;
@@ -305,17 +303,17 @@ function findNextTimeByCondWithoutCD(
       const result = [];
       let dateOffset = now;
       while (count > 0 && maxLocalDate.getTime() > dateOffset.getTime()) {
-        const nextStartLocalDate = findNextMoonTime(dateOffset, cond.moon, count)[0].date;
-        const nextEndLocalDate = eorzeaTimeToLocal(
-          new Date(
-            localTimeToEorzea(nextStartLocalDate).getTime() + 4 * 24 * 60 * 60 * 1000
+        const nextMoonStartLocalDate = findNextMoonTime(dateOffset, cond.moon, count)[0].date;
+        const nextMoonEndLocalDate = new Date(Math.round(
+          eorzeaTimeToLocal(
+            localTimeToEorzea(nextMoonStartLocalDate.getTime()) + 4 * 24 * 60 * 60 * 1000
           )
-        );
-        dateOffset = new Date(nextEndLocalDate.getTime() + 1000);
+        ));
+        dateOffset = new Date(nextMoonEndLocalDate.getTime() + 1000);
         const nowEorzea = localTimeToEorzea(now);
-        const clock = calcEorzeaClock(localTimeToEorzea(nextStartLocalDate));
+        const clock = calcEorzeaClock(localTimeToEorzea(nextMoonStartLocalDate));
         // 把时间规整到月相起始日的ET时间
-        let etOffset = clock.eorzeaTime.getTime();
+        let etOffset = clock.eorzeaTime;
         etOffset -= clock.millisecond;
         etOffset -= clock.second * 1000;
         etOffset -= clock.minute * 60 * 1000;
@@ -331,18 +329,17 @@ function findNextTimeByCondWithoutCD(
           etRangeStart += 24 * 60 * 60 * 1000;
           etRangeEnd += 24 * 60 * 60 * 1000;
         }
-        while (etRangeStart < nextEndLocalDate.getTime()) {
-          if (etRangeStart > nextStartLocalDate.getTime() && etRangeEnd < nextEndLocalDate.getTime()) {
+        while (etRangeStart < nextMoonEndLocalDate.getTime()) {
+          if (etRangeStart > nextMoonStartLocalDate.getTime() && etRangeEnd < nextMoonEndLocalDate.getTime()) {
             const date = eorzeaTimeToLocal(new Date(etRangeStart));
-            result.push({ date: date, duration: (etRangeEnd - etRangeStart) / eorzeaRatio });
+            result.push({ date: date, duration: eorzeaTimeToLocal(etRangeEnd - etRangeStart) });
             count--;
-          } else if (etRangeStart < nextStartLocalDate.getTime() && etRangeEnd > nextStartLocalDate.getTime()) {
-            const date = eorzeaTimeToLocal(nextStartLocalDate);
-            result.push({ date: date, duration: (etRangeEnd - nextStartLocalDate.getTime() * eorzeaRatio) / eorzeaRatio });
+          } else if (etRangeStart < nextMoonStartLocalDate.getTime() && etRangeEnd > nextMoonStartLocalDate.getTime()) {
+            result.push({ date: nextMoonStartLocalDate, duration: eorzeaTimeToLocal(etRangeEnd - localTimeToEorzea(nextMoonStartLocalDate.getTime())) });
             count--;
-          } else if (etRangeStart < nextEndLocalDate.getTime() && etRangeEnd > nextEndLocalDate.getTime()) {
-            const date = eorzeaTimeToLocal(new Date(etRangeStart));
-            result.push({ date: date, duration: (nextEndLocalDate.getTime() * eorzeaRatio - etRangeStart) / eorzeaRatio });
+          } else if (etRangeStart < nextMoonEndLocalDate.getTime() && etRangeEnd > nextMoonEndLocalDate.getTime()) {
+            const date = eorzeaTimeToLocal(etRangeStart);
+            result.push({ date: new Date(date), duration: eorzeaTimeToLocal(localTimeToEorzea(nextMoonEndLocalDate) - etRangeStart) });
             count--;
           }
           etRangeStart += 24 * 60 * 60 * 1000;

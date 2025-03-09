@@ -14,8 +14,10 @@ export const DEFAULT_REAL_TIME_OFFSET = -480;
 
 /*
  * export interface EorzeaClock {
- *     localTime: Date;
- *     eorzeaTime: Date;
+ *     localTime: number;
+ *     localTimeDate: Date;
+ *     eorzeaTime: number;
+ *     eorzeaTimeDate: Date;
  *     month: number;
  *     day: number;
  *     hour: number;
@@ -30,16 +32,24 @@ export const DEFAULT_REAL_TIME_OFFSET = -480;
  */
 
 /**
- * 将本地时间转换为艾欧泽亚时间，附带所有时间细节
+ * 创建艾欧泽亚时钟，附带所有时间细节
  *
- * @param localDate {Date}
+ * @param {Date | number} date
+ * @param {boolean} isEt
  * @return {EorzeaClock}
  */
-export function calcEorzeaClock(localDate = new Date(Date.now() + DEFAULT_REAL_TIME_OFFSET)) {
+export function calcEorzeaClock(date = new Date(Date.now() + DEFAULT_REAL_TIME_OFFSET), isEt = false) {
   // 代码参考魂晶计算器，https://ff14db.games.sina.com.cn/index.html
   // 在魂晶计算器的基础上略作优化(去除了无法理解的艾欧泽亚起始时间，修改时间偏移(放在了createAutoClock中))
-  const et = localTimeToEorzea(localDate);
-  let timeOffset = et.getTime();
+
+  let timeOffset;
+  if (typeof date === 'number') {
+    timeOffset = isEt ? date : (date * eorzeaRatio);
+  } else {
+    timeOffset = isEt ? date.getTime() : (date.getTime() * eorzeaRatio);
+  }
+  const et = timeOffset;
+  const lt = eorzeaTimeToLocal(timeOffset);
   const eorzeaMs = timeOffset % 1000;
   timeOffset = (timeOffset - eorzeaMs) / 1000;
   const eorzeaSecond = timeOffset % 60;
@@ -56,8 +66,10 @@ export function calcEorzeaClock(localDate = new Date(Date.now() + DEFAULT_REAL_T
   // const eorzeaYear = timeOffset;
 
   return  {
-    localTime: localDate,
+    localTime: lt,
+    localTimeDate: new Date(lt),
     eorzeaTime: et,
+    eorzeaTimeDate: new Date(et),
     month: eorzeaMonth + 1,
     day: eorzeaDay + 1,
     hour: eorzeaHour,
@@ -72,23 +84,25 @@ export function calcEorzeaClock(localDate = new Date(Date.now() + DEFAULT_REAL_T
 }
 
 /**
- * ET转LT
+ * ET转LT，输出类型取决于输入类型
  *
- * @param date {Date}
- * @return {Date}
+ * @template {Date | number} T
+ * @param date {T}
+ * @return {T}
  */
 export function eorzeaTimeToLocal(date) {
-  return new Date(date.getTime() / eorzeaRatio);
+  return typeof date === 'number' ? date / eorzeaRatio : new Date(Math.round(date.getTime() / eorzeaRatio));
 }
 
 /**
- * LT转ET
+ * LT转ET，输出类型取决于输入类型
  *
- * @param date {Date}
- * @return {Date}
+ * @template {Date | number} T
+ * @param date {T}
+ * @return {T}
  */
 export function localTimeToEorzea(date) {
-  return new Date(date.getTime() * eorzeaRatio);
+  return typeof date === 'number' ? date * eorzeaRatio : new Date(Math.round(date.getTime() * eorzeaRatio));
 }
 
 /**

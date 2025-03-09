@@ -52,11 +52,11 @@ function findMoonTime(
   if (moonName && !moons.some(it => it === moonName)) throw new Error(`Unknown moonName ${moonName}`);
   const clock = calcEorzeaClock(localDate);
   // 把时间规整到月相起始日的中午十二点
-  let etOffset = clock.eorzeaTime.getTime();
+  let etOffset = clock.eorzeaTime;
   etOffset -= clock.millisecond;
   etOffset -= clock.second * 1000;
   etOffset -= clock.minute * 60 * 1000;
-  etOffset -= Math.min(0, clock.hour - 12) * 60 * 60 * 1000;
+  etOffset -= Math.max(0, clock.hour - 12) * 60 * 60 * 1000;
   const daysOfCycle = Math.floor(daysIntoLunarCycle(clock.eorzeaTime) % 4);
   etOffset -= daysOfCycle * 24 * 60 * 60 * 1000;
 
