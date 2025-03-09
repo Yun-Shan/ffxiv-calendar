@@ -48,7 +48,7 @@ export function getExtendEorzeaClock(localDate) {
       if (!cache) return findNextWeatherTime(localDate, locName);
       if (extendClock._nextWeather[locName] !== undefined) return extendClock._nextWeather[locName];
       const nextWeatherResult = findNextWeatherTime(localDate, locName, { blacklist: [extendClock.getWeather(locName)] });
-      extendClock._nextWeather[locName] = nextWeatherResult ? nextWeatherResult[0] : null;
+      extendClock._nextWeather[locName] = nextWeatherResult ? (nextWeatherResult[0] ?? null) : null;
       return extendClock._nextWeather[locName];
     }
   }
@@ -165,26 +165,28 @@ export function findNextTimeByCond(
   let timeOffset = now;
   let lastTime = 0;
   while (finalResult.length < count) {
-    if (finalResult.length > 0) {
-      timeOffset = new Date(finalResult[finalResult.length - 1].date.getTime() + 1000);
-    }
-    const filteredResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset)
-      .reduce((acc, curr) => {
-        if ((curr.date.getTime() - lastTime) > cooldown) {
-          lastTime = curr.date.getTime();
-          let mergeWindow = false;
-          if (acc.length > 0) {
-            const last = acc[acc.length - 1];
-            if (last.date.getTime() + last.duration === curr.date.getTime()) {
-              last.duration += curr.duration;
-              mergeWindow = true;
-            }
+    const rawResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset);
+    const filteredResult = rawResult.reduce((acc, curr) => {
+      if ((curr.date.getTime() - lastTime) > cooldown) {
+        lastTime = curr.date.getTime();
+        let mergeWindow = false;
+        if (acc.length > 0) {
+          const last = acc[acc.length - 1];
+          if (last.date.getTime() + last.duration === curr.date.getTime()) {
+            last.duration += curr.duration;
+            mergeWindow = true;
           }
-          if (!mergeWindow) acc.push(curr);
         }
-        return acc;
-      }, []);
+        if (!mergeWindow) acc.push(curr);
+      }
+      return acc;
+    }, []);
     finalResult.push(...filteredResult);
+    // 原始查询为0的话就是找不到了
+    if (rawResult.length === 0) {
+      break;
+    }
+    timeOffset = new Date(finalResult[finalResult.length - 1].date.getTime() + 1000);
   }
   return finalResult.slice(0, count);
 }

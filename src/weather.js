@@ -7,6 +7,41 @@ import { eorzeaTimeToLocal, localTimeToEorzea } from './time.js';
  * @typedef {string | { whitelist?: string[], blacklist?: string[], sequence?: string[] }} WeatherCond
  */
 
+const allLocations = Object.keys(locDataByName).filter(it => !/^[0-9]+$/.test(it));
+
+/**
+ * 获取所有可用的地点名称列表
+ *
+ * @return {string[]}
+ */
+export function getAllowLocations() {
+  return allLocations;
+}
+
+const FALLBACK_WEATHER = '晴朗';
+
+/**
+ * 用于制作固定天气的地点的查询结果
+ *
+ * @param {string} weatherName
+ * @param {Date} now
+ * @param {'next' | 'prev'} nextOrPrev
+ * @param {number} count
+ * @param {boolean} useCurrent
+ * @return {{ date: Date, weather: string }[]}
+ */
+function buildSameWeatherTime(weatherName, now, nextOrPrev, count, useCurrent) {
+  const eTime = getWeatherInterval(localTimeToEorzea(now));
+  /** @type {{ date: Date, weather: string }[]} */
+  const result = [];
+  if (useCurrent) result.push({ date: eorzeaTimeToLocal(eTime), weather: weatherName });
+  while (result.length < count) {
+    eTime.setUTCHours(eTime.getUTCHours() + (nextOrPrev === 'next' ? 8 : -8));
+    result.push({ date: eorzeaTimeToLocal(eTime), weather: weatherName });
+  }
+  return result;
+}
+
 /**
  * 计算指定的本地时间对应的天气数值
  *
@@ -39,8 +74,6 @@ function calculateForecastTarget(localDate) {
   // 0x64 = 100
   return step2 % 100;
 }
-
-// TODO 所有查天气相关函数需要兼容所有地点的天气，无天气变化的要返回对应的固定天气，只有找不到地点的才返回空值。这个工作需要用xivapi改进数据获取，工作量较大
 
 /**
  * 计算指定的本地时间的指定地点的天气
@@ -82,13 +115,28 @@ export function getWeatherInterval(eDate) {
  * @param count {number=} 需要查找几个目标时间点
  * @param untilLocalDate {Date=} 限制查找的最远时间点，避免无限循环(不过天气查找本身应该不会有过多的循环)
  *
- * @return {{ date: Date, weather: string }[] | null} count数量的天气起始时间点(本地时间)，地点不存在或指定天气没有天气变化或指定地点没有指定天气时返回null
+ * @return {{ date: Date, weather: string }[]} count数量的天气起始时间点(本地时间)，如果直到untilLocalDate还找不够的话结果数量会小于count
  */
 function findWeatherTime(
   localDate, locName, weatherCond, nextOrPrev, count = 1, untilLocalDate
 ) {
   const loc = locDataByName[locName];
-  if (!loc?.weatherRate) return null;
+  // 对无天气或只有一个天气的地点特殊处理
+  if (!loc?.weatherRate || loc.weatherRate.length < 2) {
+    const allowWeather = loc?.weatherRate[0]?.weather || FALLBACK_WEATHER;
+    if (!weatherCond) return buildSameWeatherTime(allowWeather, localDate, nextOrPrev, count, false);
+    let checkPass = false;
+    if (typeof weatherCond === 'string') {
+      checkPass = weatherCond === allowWeather;
+    } else if (
+      (weatherCond.whitelist && weatherCond.whitelist.includes(allowWeather))
+      || (weatherCond.blacklist && !weatherCond.blacklist.includes(allowWeather))
+      || (weatherCond.sequence && weatherCond.sequence.length === 1 && weatherCond.sequence[0] === allowWeather)
+    ) {
+      checkPass = true;
+    }
+    return checkPass ? buildSameWeatherTime(allowWeather, localDate, nextOrPrev, count, true) : [];
+  }
   /** @type {((weatherName: string, eTime: Date) => boolean) | undefined} */
   let weatherChecker;
   if (weatherCond) {
@@ -175,7 +223,7 @@ function findWeatherTime(
  * @param count {number=} 需要查找几个目标时间点
  * @param untilLocalDate {Date=} 限制查找的最远时间点，避免无限循环(不过天气查找本身应该不会有过多的循环)
  *
- * @return {{ date: Date, weather: string }[] | null} count数量的天气起始时间点(本地时间)，地点不存在或指定天气没有天气变化或指定地点没有指定天气时返回null
+ * @return {{ date: Date, weather: string }[]} count数量的天气起始时间点(本地时间)，如果直到untilLocalDate还找不够的话结果数量会小于count
  */
 export function findNextWeatherTime(localDate, locName, weatherCond, count = 1, untilLocalDate) {
   return findWeatherTime(localDate, locName, weatherCond, 'next', count, untilLocalDate);
@@ -190,7 +238,7 @@ export function findNextWeatherTime(localDate, locName, weatherCond, count = 1, 
  * @param count {number=} 需要查找几个目标时间点
  * @param untilLocalDate {Date=} 限制查找的最远时间点，避免无限循环(不过天气查找本身应该不会有过多的循环)
  *
- * @return {{ date: Date, weather: string }[] | null} count数量的天气起始时间点(本地时间)，地点不存在或指定天气没有天气变化或指定地点没有指定天气时返回null
+ * @return {{ date: Date, weather: string }[]}  count数量的天气起始时间点(本地时间)，如果直到untilLocalDate还找不够的话结果数量会小于count
  */
 export function findPrevWeatherTime(localDate, locName, weatherCond, count = 1, untilLocalDate) {
   return findWeatherTime(localDate, locName, weatherCond, 'prev', count, untilLocalDate);

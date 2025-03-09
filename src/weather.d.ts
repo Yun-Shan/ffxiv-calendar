@@ -6,6 +6,13 @@
 type WeatherCond = string | { whitelist?: string[], blacklist?: string[], sequence?: string[] };
 
 /**
+ * 获取所有可用的地点名称列表
+ *
+ * @return {string[]}
+ */
+export function getAllowLocations(): string[];
+
+/**
  * 计算指定的本地时间的指定地点的天气
  *
  * @param localDate {Date}
@@ -31,12 +38,12 @@ export function getWeatherInterval(eDate?: Date | number): Date;
  * @param count {number=} 需要查找几个目标时间点
  * @param untilLocalDate {Date=} 限制查找的最远时间点，避免无限循环(不过天气查找本身应该不会有过多的循环)
  *
- * @return {{ date: Date, weather: string }[] | null} count数量的天气起始时间点(本地时间)，地点不存在或指定天气没有天气变化或指定地点没有指定天气时返回null
+ * @return {{ date: Date, weather: string }[]}  count数量的天气起始时间点(本地时间)，如果直到untilLocalDate还找不够的话结果数量会小于count
  */
 export function findNextWeatherTime(localDate: Date, locName: string, weatherCond?: WeatherCond | undefined, count?: number | undefined, untilLocalDate?: Date | undefined): {
     date: Date;
     weather: string;
-}[] | undefined;
+}[];
 
 /**
  * 查找以前的天气时间
@@ -47,9 +54,9 @@ export function findNextWeatherTime(localDate: Date, locName: string, weatherCon
  * @param count {number=} 需要查找几个目标时间点
  * @param untilLocalDate {Date=} 限制查找的最远时间点，避免无限循环(不过天气查找本身应该不会有过多的循环)
  *
- * @return {{ date: Date, weather: string }[] | null} count数量的天气起始时间点(本地时间)，地点不存在或指定天气没有天气变化或指定地点没有指定天气时返回null
+ * @return {{ date: Date, weather: string }[]}  count数量的天气起始时间点(本地时间)，如果直到untilLocalDate还找不够的话结果数量会小于count
  */
 export function findPrevWeatherTime(localDate: Date, locName: string, weatherCond?: WeatherCond | undefined, count?: number | undefined, untilLocalDate?: Date | undefined): {
     date: Date;
     weather: string;
-}[] | undefined;
+}[];

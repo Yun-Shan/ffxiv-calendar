@@ -7,6 +7,9 @@ export interface ExtendEorzeaClock extends EorzeaClock {
   getMoonPhase(): string;
   nextMoon(): ReturnType<typeof findNextMoonTime>[0];
   getWeather(locName: string, cache?: boolean): string | null;
+  /**
+   * 如果没有天气变化会返回null
+   */
   nextWeather(locName: string, cache?: boolean): Required<ReturnType<typeof findNextWeatherTime>>[0] | null;
 }
 
