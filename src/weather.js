@@ -4,7 +4,7 @@ import { eorzeaTimeToLocal, localTimeToEorzea } from './time.js';
 // 代码参考自 https://garlandtools.cn/db/js/gt.js 略作修改
 
 /**
- * @typedef {string | { whitelist?: string[], blacklist?: string[], sequence?: string[] }} WeatherCond
+ * @typedef {string | { whitelist?: string[], blacklist?: string[], sequences?: string[][] }} WeatherCond
  */
 
 const allLocations = [...new Set(Object.keys(locDataByName))]
@@ -135,7 +135,7 @@ function findWeatherTime(
     } else if (
       (weatherCond.whitelist && weatherCond.whitelist.includes(allowWeather))
       || (weatherCond.blacklist && !weatherCond.blacklist.includes(allowWeather))
-      || (weatherCond.sequence && weatherCond.sequence.length === 1 && weatherCond.sequence[0] === allowWeather)
+      || (weatherCond.sequences && weatherCond.sequences.length === 1 && weatherCond.sequences[0]?.length === 1 && weatherCond.sequences[0][0] === allowWeather)
     ) {
       checkPass = true;
     }
@@ -145,33 +145,36 @@ function findWeatherTime(
   let weatherChecker;
   if (weatherCond) {
     if (typeof weatherCond === 'string') {
-      if (!loc.weatherRate.some(it => it.weather === weatherCond)) return null;
+      if (!loc.weatherRate.some(it => it.weather === weatherCond)) return [];
       weatherChecker = (weatherName) => weatherName === weatherCond;
     } else {
       const allowWeathers = new Set(loc.weatherRate.map(it => it.weather));
       if (weatherCond.whitelist && weatherCond.whitelist.length > 0) {
         const set = new Set(weatherCond.whitelist);
-        if (allowWeathers.intersection(set).size === 0) return null;
+        if (allowWeathers.intersection(set).size === 0) return [];
         weatherChecker = (weatherName) => set.has(weatherName);
       } else if (weatherCond.blacklist && weatherCond.blacklist.length > 0) {
         const set = new Set(weatherCond.blacklist);
-        if (allowWeathers.difference(set).size === 0) return null;
+        if (allowWeathers.difference(set).size === 0) return [];
         weatherChecker = (weatherName) => !set.has(weatherName);
-      } else if (weatherCond.sequence && weatherCond.sequence.length > 0) {
-        if (weatherCond.sequence.length === 1) {
-          if (!loc.weatherRate.some(it => it.weather === weatherCond.sequence[0])) return null;
-          weatherChecker = (weatherName) => weatherName === weatherCond.sequence[0];
+      } else if (weatherCond.sequences && weatherCond.sequences.length > 0) {
+        if (weatherCond.sequences.length === 1) {
+          if (!loc.weatherRate.some(it => it.weather === weatherCond.sequences[0])) return [];
+          weatherChecker = (weatherName) => weatherName === weatherCond.sequences[0];
         } else {
-          if (weatherCond.sequence.some(it => !allowWeathers.has(it))) return null;
+          const validSequences = weatherCond.sequences.filter(it => !it.some(s => !allowWeathers.has(s)));
+          if (validSequences.length === 0) return [];
           weatherChecker = (weatherName, eTime) => {
-            const et = new Date(eTime);
-            for (let i = weatherCond.sequence.length - 1; i >= 0; i--) {
-              const seqWeather = weatherCond.sequence[i];
-              if (seqWeather !== weatherName) return false;
-              et.setUTCHours(et.getUTCHours() - 8);
-              weatherName = forecastWeather(eorzeaTimeToLocal(et), locName);
-            }
-            return true;
+            return validSequences.some(seq => {
+              const et = new Date(eTime);
+              for (let i = seq.length - 1; i >= 0; i--) {
+                const seqWeather = seq[i];
+                if (seqWeather !== weatherName) return false;
+                et.setUTCHours(et.getUTCHours() - 8);
+                weatherName = forecastWeather(eorzeaTimeToLocal(et), locName);
+              }
+              return true;
+            })
           };
         }
       } else {

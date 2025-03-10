@@ -3,7 +3,7 @@
  *
  * 只有一种条件可以生效，优先级为 白名单->黑名单->序列，string类型视为单一白名单
  */
-type WeatherCond = string | { whitelist?: string[], blacklist?: string[], sequence?: string[] };
+type WeatherCond = string | { whitelist?: string[], blacklist?: string[], sequences?: string[][] };
 
 /**
  * 获取所有可用的地点名称列表
