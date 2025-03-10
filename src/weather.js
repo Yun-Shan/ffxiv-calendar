@@ -135,7 +135,7 @@ function findWeatherTime(
     } else if (
       (weatherCond.whitelist && weatherCond.whitelist.includes(allowWeather))
       || (weatherCond.blacklist && !weatherCond.blacklist.includes(allowWeather))
-      || (weatherCond.sequences && weatherCond.sequences.length === 1 && weatherCond.sequences[0]?.length === 1 && weatherCond.sequences[0][0] === allowWeather)
+      || (weatherCond.sequences && weatherCond.sequences.length === 1 && weatherCond.sequences[0].length === 1 && weatherCond.sequences[0][0] === allowWeather)
     ) {
       checkPass = true;
     }
@@ -158,7 +158,7 @@ function findWeatherTime(
         if (allowWeathers.difference(set).size === 0) return [];
         weatherChecker = (weatherName) => !set.has(weatherName);
       } else if (weatherCond.sequences && weatherCond.sequences.length > 0) {
-        if (weatherCond.sequences.length === 1) {
+        if (weatherCond.sequences.length === 1 && weatherCond.sequences[0].length === 1) {
           if (!loc.weatherRate.some(it => it.weather === weatherCond.sequences[0])) return [];
           weatherChecker = (weatherName) => weatherName === weatherCond.sequences[0];
         } else {
