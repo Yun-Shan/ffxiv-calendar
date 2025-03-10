@@ -160,8 +160,9 @@ export function findNextTimeByCond(
   /** @type {{ date: Date, duration: number }[]} */
   let finalResult = [];
   let timeOffset = now ?? new Date();
+  if (!maxLocalDate) maxLocalDate = new Date(timeOffset.getTime() + 180 * 86400_000);
   let lastTime = 0;
-  while (finalResult.length < count) {
+  while (finalResult.length < count && maxLocalDate.getTime() > timeOffset) {
     const rawResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset);
     const filteredResult = rawResult.reduce((acc, curr) => {
       const currEndTime = curr.date.getTime() + curr.duration;
@@ -187,8 +188,8 @@ export function findNextTimeByCond(
     if (rawResult.length === 0) {
       break;
     }
-    const last = finalResult[finalResult.length - 1];
-    timeOffset = new Date(last.date.getTime() + last.duration + 1000);
+    const lastRaw = rawResult[rawResult.length - 1];
+    timeOffset = new Date(lastRaw.date.getTime() + lastRaw.duration + 1000);
   }
   return finalResult.slice(0, count);
 }
