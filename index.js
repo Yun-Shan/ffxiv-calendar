@@ -164,7 +164,8 @@ export function findNextTimeByCond(
   while (finalResult.length < count) {
     const rawResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset);
     const filteredResult = rawResult.reduce((acc, curr) => {
-      if ((curr.date.getTime() + curr.duration) < timeOffset.getTime()) {
+      const currEndTime = curr.date.getTime() + curr.duration;
+      if (currEndTime < timeOffset.getTime()) {
         return acc;
       }
       if ((curr.date.getTime() - lastTime) > cooldown) {
@@ -186,7 +187,8 @@ export function findNextTimeByCond(
     if (rawResult.length === 0) {
       break;
     }
-    timeOffset = new Date(finalResult[finalResult.length - 1].date.getTime() + 1000);
+    const last = finalResult[finalResult.length - 1];
+    timeOffset = new Date(last.date.getTime() + last.duration + 1000);
   }
   return finalResult.slice(0, count);
 }
