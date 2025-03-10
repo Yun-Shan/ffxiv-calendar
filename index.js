@@ -349,15 +349,13 @@ function findNextTimeByCondWithoutCD(
         let etOffset = clock.eorzeaTime;
         etOffset -= clock.millisecond;
         etOffset -= clock.second * 1000;
-        etOffset -= clock.minute * 60 * 1000;
+        etOffset -= clock.minute * 60_000;
         // 值得注意的是，GarlandTools对月相的计算是按中午12点切换的，但不确定游戏内具体是几点切换
         // 为了代码写起来方便，这里把12点归回0点，但是这会导致月相起始日的et0000-et1200的数据可能有问题
         // 如果在只有et和moon的条件下计算结果和游戏内实际不符，可以考虑是这个的问题
-        etOffset -= clock.hour * 60 * 60 * 1000;
-        etOffset += Math.floor(cond.etRange[0] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[0] % 100) * 60 * 1000;
-        let etRangeStart = etOffset;
-        etOffset += Math.floor(cond.etRange[1] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[1] % 100) * 60 * 1000;
-        let etRangeEnd = etOffset;
+        etOffset -= clock.hour * 3600_000;
+        let etRangeStart = etOffset + Math.floor(cond.etRange[0] / 100) * 3600_000 + Math.floor(cond.etRange[0] % 100) * 60_000;
+        let etRangeEnd = etOffset + Math.floor(cond.etRange[1] / 100) * 3600_000 + Math.floor(cond.etRange[1] % 100) * 60_000;
         while (etRangeEnd <= nowEorzea.getTime()) {
           etRangeStart += 24 * 60 * 60 * 1000;
           etRangeEnd += 24 * 60 * 60 * 1000;
@@ -394,23 +392,21 @@ function findNextTimeByCondWithoutCD(
       let etOffset = clock.eorzeaTime;
       etOffset -= clock.millisecond;
       etOffset -= clock.second * 1000;
-      etOffset -= clock.minute * 60 * 1000;
-      etOffset -= clock.hour * 60 * 60 * 1000;
-      etOffset += Math.floor(cond.etRange[0] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[0] % 100) * 60 * 1000;
-      let etRangeStart = etOffset;
-      etOffset += Math.floor(cond.etRange[1] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[1] % 100) * 60 * 1000;
-      let etRangeEnd = etOffset;
+      etOffset -= clock.minute * 60_000;
+      etOffset -= clock.hour * 3600_000;
+      let etRangeStart = etOffset + Math.floor(cond.etRange[0] / 100) * 3600_000 + Math.floor(cond.etRange[0] % 100) * 60_000;
+      let etRangeEnd = etOffset + Math.floor(cond.etRange[1] / 100) * 3600_000 + Math.floor(cond.etRange[1] % 100) * 60_000;
       while (etRangeEnd <= clock.eorzeaTime) {
-        etRangeStart += 24 * 60 * 60 * 1000;
-        etRangeEnd += 24 * 60 * 60 * 1000;
+        etRangeStart += 86400_000;
+        etRangeEnd += 86400_000;
       }
       const maxET = localTimeToEorzea(maxLocalDate.getTime())
       while (count > 0 && maxET > etRangeStart) {
         const date = eorzeaTimeToLocal(new Date(etRangeStart));
         result.push({ date: date, duration: Math.round(eorzeaTimeToLocal(etRangeEnd - etRangeStart)) });
         count--;
-        etRangeStart += 24 * 60 * 60 * 1000;
-        etRangeEnd += 24 * 60 * 60 * 1000;
+        etRangeStart += 86400_000;
+        etRangeEnd += 86400_000;
       }
       return result;
     }
