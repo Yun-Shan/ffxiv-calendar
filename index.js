@@ -162,8 +162,9 @@ export function findNextTimeByCond(
   let timeOffset = now ?? new Date();
   if (!maxLocalDate) maxLocalDate = new Date(timeOffset.getTime() + 180 * 86400_000);
   let lastTime = 0;
+  let tryFindCount = count;
   while (finalResult.length < count && maxLocalDate.getTime() > timeOffset) {
-    const rawResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset);
+    const rawResult = findNextTimeByCondWithoutCD(cond, tryFindCount, maxLocalDate, timeOffset);
     const filteredResult = rawResult.reduce((acc, curr) => {
       const currEndTime = curr.date.getTime() + curr.duration;
       if (currEndTime < timeOffset.getTime()) {
@@ -183,6 +184,10 @@ export function findNextTimeByCond(
       }
       return acc;
     }, []);
+    // 如果有被过滤的结果就增加查找数量，目的是尽量一次找完更多有效结果，增加的方式只要不会过多过少都行
+    if (filteredResult.length < rawResult.length) {
+      tryFindCount += rawResult.length - filteredResult.length;
+    }
     finalResult.push(...filteredResult);
     // 原始查询为0的话就是找不到了
     if (rawResult.length === 0) {
