@@ -4,3 +4,7 @@
 
 该项目包含一个计算窗口期的函数(参考[`index.d.ts`](./index.d.ts))，可用于计算S怪、鱼王之类的窗口期。  
 目前查找窗口期的方式比较暴力，希望能找到一种更好的查找方式。
+
+参考：
+- [魂晶计算器](http://ff14db.games.sina.com.cn/index.html)
+- [Garland Tools](https://garlandtools.cn/db/#)
