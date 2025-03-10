@@ -133,9 +133,9 @@ function findWeatherTime(
     if (typeof weatherCond === 'string') {
       checkPass = weatherCond === allowWeather;
     } else if (
-      (weatherCond.whitelist && weatherCond.whitelist.includes(allowWeather))
+      (weatherCond.whitelist?.includes(allowWeather))
       || (weatherCond.blacklist && !weatherCond.blacklist.includes(allowWeather))
-      || (weatherCond.sequences && weatherCond.sequences.length === 1 && weatherCond.sequences[0].length === 1 && weatherCond.sequences[0][0] === allowWeather)
+      || (weatherCond.sequences?.length === 1 && weatherCond.sequences[0]?.length === 1 && weatherCond.sequences[0][0] === allowWeather)
     ) {
       checkPass = true;
     }
@@ -149,32 +149,36 @@ function findWeatherTime(
       weatherChecker = (weatherName) => weatherName === weatherCond;
     } else {
       const allowWeathers = new Set(loc.weatherRate.map(it => it.weather));
-      if (weatherCond.whitelist && weatherCond.whitelist.length > 0) {
+      if (weatherCond.whitelist?.length > 0) {
         const set = new Set(weatherCond.whitelist);
         if (allowWeathers.intersection(set).size === 0) return [];
         weatherChecker = (weatherName) => set.has(weatherName);
-      } else if (weatherCond.blacklist && weatherCond.blacklist.length > 0) {
+      } else if (weatherCond.blacklist?.length > 0) {
         const set = new Set(weatherCond.blacklist);
         if (allowWeathers.difference(set).size === 0) return [];
         weatherChecker = (weatherName) => !set.has(weatherName);
-      } else if (weatherCond.sequences && weatherCond.sequences.length > 0) {
+      } else if (weatherCond.sequences?.length > 0) {
         if (weatherCond.sequences.length === 1 && weatherCond.sequences[0].length === 1) {
-          if (!loc.weatherRate.some(it => it.weather === weatherCond.sequences[0])) return [];
-          weatherChecker = (weatherName) => weatherName === weatherCond.sequences[0];
+          const targetWeather = weatherCond.sequences[0][0];
+          if (!loc.weatherRate.some(it => it.weather === targetWeather)) return [];
+          weatherChecker = (weatherName) => weatherName === targetWeather;
         } else {
-          const validSequences = weatherCond.sequences.filter(it => !it.some(s => !allowWeathers.has(s)));
+          const validSequences = weatherCond.sequences.filter(seq =>
+            seq.every(s => allowWeathers.has(s))
+          );
           if (validSequences.length === 0) return [];
           weatherChecker = (weatherName, eTime) => {
             return validSequences.some(seq => {
-              const et = new Date(eTime);
+              let currentWeather = weatherName;
+              let timestamp = eTime.getTime();
               for (let i = seq.length - 1; i >= 0; i--) {
-                const seqWeather = seq[i];
-                if (seqWeather !== weatherName) return false;
-                et.setUTCHours(et.getUTCHours() - 8);
-                weatherName = forecastWeather(eorzeaTimeToLocal(et), locName);
+                if (currentWeather !== seq[i]) return false;
+                timestamp -= 8 * 60 * 60 * 1000; // 8小时的时间戳偏移
+                const prevTime = new Date(timestamp);
+                currentWeather = forecastWeather(eorzeaTimeToLocal(prevTime), locName);
               }
               return true;
-            })
+            });
           };
         }
       } else {
@@ -187,13 +191,15 @@ function findWeatherTime(
   /** @type {{ date: Date, weather: string }[]} */
   const result = [];
 
+  const isNext = nextOrPrev === 'next';
   if (!untilLocalDate) {
     untilLocalDate = new Date(localDate);
     // 最多往前/后查找一年现实时间
-    untilLocalDate.setUTCFullYear(untilLocalDate.getUTCFullYear() + (nextOrPrev === 'next' ? 1 : -1));
+    untilLocalDate.setUTCFullYear(untilLocalDate.getUTCFullYear() + (isNext ? 1 : -1));
   }
   const untilEt = localTimeToEorzea(untilLocalDate.getTime());
-  const checkEt = nextOrPrev === 'next' ? (() => eTime.getTime() <= untilEt) : (() => eTime.getTime() >= untilEt);
+  const checkEt = isNext ? (() => eTime.getTime() <= untilEt) : (() => eTime.getTime() >= untilEt);
+  const stepHour = isNext ? 8 : -8;
   while (checkEt() && count-- > 0) {
     /** @type {string} */
     let curWeather;
@@ -204,16 +210,16 @@ function findWeatherTime(
         curWeather = forecastWeather(eorzeaTimeToLocal(eTime), locName);
         if (weatherChecker(curWeather, eTime)) {
           result.push({ date: eorzeaTimeToLocal(eTime), weather: curWeather });
-          eTime.setUTCHours(eTime.getUTCHours() + (nextOrPrev === 'next' ? 8 : -8));
+          eTime.setUTCHours(eTime.getUTCHours() + stepHour);
           found = true;
           break;
         }
-        eTime.setUTCHours(eTime.getUTCHours() + (nextOrPrev === 'next' ? 8 : -8));
+        eTime.setUTCHours(eTime.getUTCHours() + stepHour);
       }
       // 如果是时间查完了导致的跳出循环，则不继续后续循环
       if (!found) break;
     } else {
-      eTime.setUTCHours(eTime.getUTCHours() + (nextOrPrev === 'next' ? 8 : -8));
+      eTime.setUTCHours(eTime.getUTCHours() + stepHour);
       curWeather = forecastWeather(eorzeaTimeToLocal(eTime), locName);
       result.push({ date: eorzeaTimeToLocal(eTime), weather: curWeather });
     }

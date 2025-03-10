@@ -42,34 +42,35 @@ export function calcEorzeaClock(date = new Date(Date.now() + DEFAULT_REAL_TIME_O
   // 代码参考魂晶计算器，https://ff14db.games.sina.com.cn/index.html
   // 在魂晶计算器的基础上略作优化(去除了无法理解的艾欧泽亚起始时间，修改时间偏移(放在了createAutoClock中))
 
-  let timeOffset;
+  let eorzeaTimestamp;
   if (typeof date === 'number') {
-    timeOffset = isEt ? date : (date * eorzeaRatio);
+    eorzeaTimestamp = isEt ? date : (date * eorzeaRatio);
   } else {
-    timeOffset = isEt ? date.getTime() : (date.getTime() * eorzeaRatio);
+    eorzeaTimestamp = isEt ? date.getTime() : (date.getTime() * eorzeaRatio);
   }
-  const et = timeOffset;
-  const lt = eorzeaTimeToLocal(timeOffset);
-  const eorzeaMs = timeOffset % 1000;
-  timeOffset = (timeOffset - eorzeaMs) / 1000;
-  const eorzeaSecond = timeOffset % 60;
-  timeOffset = (timeOffset - eorzeaSecond) / 60;
-  const eorzeaMinute = timeOffset % 60;
-  timeOffset = (timeOffset - eorzeaMinute) / 60;
-  const eorzeaHour = timeOffset % 24;
-  timeOffset = (timeOffset - eorzeaHour) / 24;
-  const eorzeaDay = timeOffset % 32; // 艾欧泽亚一个月固定32天
-  timeOffset = (timeOffset - eorzeaDay) / 32;
-  const eorzeaMonth = timeOffset % 12;
+
+  const localTimestamp = eorzeaTimeToLocal(eorzeaTimestamp);
+  const extractTimeUnit = (value, divisor) => [
+    value % divisor,
+    Math.floor(value / divisor)
+  ];
+
+  const [eorzeaMs, timeAfterMs] = extractTimeUnit(eorzeaTimestamp, 1000);
+  const [eorzeaSecond, timeAfterSeconds] = extractTimeUnit(timeAfterMs, 60);
+  const [eorzeaMinute, timeAfterMinutes] = extractTimeUnit(timeAfterSeconds, 60);
+  const [eorzeaHour, timeAfterHours] = extractTimeUnit(timeAfterMinutes, 24);
+  const [eorzeaDay, timeAfterDays] = extractTimeUnit(timeAfterHours, 32);
+  const [eorzeaMonth] = extractTimeUnit(timeAfterDays, 12);
   // 如果要算年的话就得有对应的起始时间，但是由于玩家主线不同步的问题，游戏里实际上不存在年(即设定上应当有，但是实际上不会使用)
   // timeOffset = (timeOffset - eorzeaMonth) / 12;
   // const eorzeaYear = timeOffset;
 
-  return  {
-    localTime: lt,
-    localTimeDate: new Date(Math.round(lt)),
-    eorzeaTime: et,
-    eorzeaTimeDate: new Date(Math.round(et)),
+  // 使用round而不是floor的原因是小数主要是精度误差导致的，我们更希望舍入到最贴近的值，而不是固定回到上一毫秒
+  return {
+    localTime: localTimestamp,
+    localTimeDate: new Date(Math.round(localTimestamp)),
+    eorzeaTime: eorzeaTimestamp,
+    eorzeaTimeDate: new Date(Math.round(eorzeaTimestamp)),
     month: eorzeaMonth + 1,
     day: eorzeaDay + 1,
     hour: eorzeaHour,
@@ -82,6 +83,8 @@ export function calcEorzeaClock(date = new Date(Date.now() + DEFAULT_REAL_TIME_O
     hourElement: hourElements[eorzeaHour],
   }
 }
+
+// 下面LT和ET互转中使用round而不是floor的原因是小数主要是精度误差导致的，我们更希望舍入到最贴近的值，而不是固定回到上一毫秒
 
 /**
  * ET转LT，输出类型取决于输入类型

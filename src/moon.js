@@ -6,6 +6,12 @@ import { calcEorzeaClock, eorzeaTimeToLocal } from './time.js';
  * @typedef {'新月'| '娥眉月'| '上弦月'| '盈凸月'| '满月'| '亏凸月'| '下弦月'| '残月'} MoonType
  */
 
+/** @type {MoonType[]} */
+const moons = ['新月', '娥眉月', '上弦月', '盈凸月', '满月', '亏凸月', '下弦月', '残月'];
+
+const PHASE_SHIFT_DAYS = 4;   // 单个月相阶段天数
+const LUNAR_CYCLE_DAYS = PHASE_SHIFT_DAYS * moons.length;  // 完整月相周期天数
+
 /**
  * 根据指定ET计算当天是当月的第几天
  *
@@ -16,11 +22,8 @@ function daysIntoLunarCycle(eDate) {
   // Moon is visible starting around 6pm.  Change phase around noon when
   // it can't be seen.
   const timestamp = typeof eDate === 'number' ? eDate : eDate.getTime();
-  return ((timestamp / 86400_000) + .5) % 32;
+  return ((timestamp / 86400_000) + .5) % LUNAR_CYCLE_DAYS;
 }
-
-/** @type {MoonType[]} */
-const moons = ['新月', '娥眉月', '上弦月', '盈凸月', '满月', '亏凸月', '下弦月', '残月'];
 
 /**
  * 根据指定ET获取当前月相
@@ -31,8 +34,8 @@ const moons = ['新月', '娥眉月', '上弦月', '盈凸月', '满月', '亏�
 export function calcMoonPhase(eDate) {
   const daysIntoCycle = daysIntoLunarCycle(eDate);
   // 4 days per moon.
-  const index = Math.floor(daysIntoCycle / 4);
-  return { moon: moons[index], moonDays: Math.floor(daysIntoCycle % 4) + 1 };
+  const index = Math.floor(daysIntoCycle / PHASE_SHIFT_DAYS);
+  return { moon: moons[index], moonDays: Math.floor(daysIntoCycle % PHASE_SHIFT_DAYS) + 1 };
 }
 
 /**
@@ -49,16 +52,23 @@ function findMoonTime(
   localDate, moonName,
   nextOrPrev, count = 1
 ) {
-  if (moonName && !moons.some(it => it === moonName)) throw new Error(`Unknown moonName ${moonName}`);
+  if (moonName && !moons.includes(moonName)) {
+    throw new Error(`Unknown moonName ${moonName}`);
+  }
   const clock = calcEorzeaClock(localDate);
   // 把时间规整到月相起始日的中午十二点
   let etOffset = clock.eorzeaTime;
   etOffset -= clock.millisecond;
   etOffset -= clock.second * 1000;
-  etOffset -= clock.minute * 60 * 1000;
-  etOffset -= (clock.hour - 12) * 60 * 60 * 1000;
-  const daysOfCycle = Math.floor(daysIntoLunarCycle(etOffset) % 4);
-  etOffset -= daysOfCycle * 24 * 60 * 60 * 1000;
+  etOffset -= clock.minute * 60_000;
+  etOffset -= (clock.hour - 12) * 3600_000;
+  // 减去当前月相已经过的天数来调整到起始日
+  etOffset -= Math.floor(daysIntoLunarCycle(etOffset) % PHASE_SHIFT_DAYS) * 86400_000;
+
+  // 闭包处理时间偏移计算
+  const applyOffset = (time, days) => {
+    return time + days * 86400_000 * (nextOrPrev === 'next' ? 1 : -1);
+  };
 
   /** @type {{ date: Date, moon: string }[]} */
   const result = [];
@@ -67,19 +77,30 @@ function findMoonTime(
     let curMoon;
     // 指定月相时从当前时间开始找(因为这时候是希望看到尽可能接近当前时间的目标月相)，不指定月相时直接偏移时间再确认月相(因为这时候是希望看到偏移后的月相)
     if (moonName) {
-      do {
-        curMoon = moons[Math.floor(daysIntoLunarCycle(etOffset) / 4)];
-        if (curMoon === moonName) {
-          result.push({date: eorzeaTimeToLocal(new Date(etOffset)), moon: curMoon});
-          // 找到之后直接偏移32天，因为月相的循环周期是32天
-          etOffset += 32 * 24 * 60 * 60 * 1000 * (nextOrPrev === 'next' ? 1 : -1);
+      let found = false;
+      let cursor = etOffset;
+
+      const moonNameIndex = moons.indexOf(moonName);
+      // 最大循环次数等于月相种类数（8种）
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const phaseIndex = Math.floor(daysIntoLunarCycle(cursor) / 4);
+        if (phaseIndex === moonNameIndex) {
+          result.push({
+            date: eorzeaTimeToLocal(new Date(cursor)),
+            moon: moonName
+          });
+          etOffset = applyOffset(cursor, 32); // 32天完整周期
+          found = true;
           break;
         }
-        // 由于月相只有8种，所以只偏移4天进行while true尝试是可接受的，当然直接通过月相索引计算偏移更好(这样就不需要循环了)
-        etOffset += 4 * 24 * 60 * 60 * 1000 * (nextOrPrev === 'next' ? 1 : -1);
-      } while (true);
+        cursor = applyOffset(cursor, 4);
+      }
+
+      if (!found) {
+        throw new Error("Target moon phase not found in cycle");
+      }
     } else {
-      etOffset += 4 * 24 * 60 * 60 * 1000 * (nextOrPrev === 'next' ? 1 : -1);
+      etOffset = applyOffset(etOffset, 4);
       curMoon = moons[Math.floor(daysIntoLunarCycle(etOffset) / 4)];
       result.push({date: eorzeaTimeToLocal(new Date(etOffset)), moon: curMoon});
     }
