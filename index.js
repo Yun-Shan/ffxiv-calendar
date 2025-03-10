@@ -163,7 +163,10 @@ export function findNextTimeByCond(
   if (!maxLocalDate) maxLocalDate = new Date(timeOffset.getTime() + 180 * 86400_000);
   let lastTime = 0;
   let tryFindCount = count;
+  let loopCount = 0;
   while (finalResult.length < count && maxLocalDate.getTime() > timeOffset) {
+    loopCount += 1;
+    if (loopCount >= 10000) throw new Error('infinite loop');
     const rawResult = findNextTimeByCondWithoutCD(cond, tryFindCount, maxLocalDate, timeOffset);
     const filteredResult = rawResult.reduce((acc, curr) => {
       const currEndTime = curr.date.getTime() + curr.duration;
