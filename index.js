@@ -378,8 +378,7 @@ function findNextTimeByCondWithoutCD(
     } else {
       /** @type {{date: Date, duration: number}[]} */
       const result = [];
-      const nowEorzea = localTimeToEorzea(now);
-      const clock = calcEorzeaClock(nowEorzea);
+      const clock = calcEorzeaClock(now);
       // 把时间规整到当前日的指定ET时间
       let etOffset = clock.eorzeaTime;
       etOffset -= clock.millisecond;
@@ -390,11 +389,12 @@ function findNextTimeByCondWithoutCD(
       let etRangeStart = etOffset;
       etOffset += Math.floor(cond.etRange[1] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[1] % 100) * 60 * 1000;
       let etRangeEnd = etOffset;
-      while (etRangeEnd <= nowEorzea.getTime()) {
+      while (etRangeEnd <= clock.eorzeaTime) {
         etRangeStart += 24 * 60 * 60 * 1000;
         etRangeEnd += 24 * 60 * 60 * 1000;
       }
-      while (count > 0 && maxLocalDate.getTime() > etRangeStart) {
+      const maxET = localTimeToEorzea(maxLocalDate.getTime())
+      while (count > 0 && maxET > etRangeStart) {
         const date = eorzeaTimeToLocal(new Date(etRangeStart));
         result.push({ date: date, duration: Math.round(eorzeaTimeToLocal(etRangeEnd - etRangeStart)) });
         count--;
