@@ -333,7 +333,7 @@ function findNextTimeByCondWithoutCD(
         ));
         dateOffset = new Date(nextMoonEndLocalDate.getTime() + 1000);
         const nowEorzea = localTimeToEorzea(now);
-        const clock = calcEorzeaClock(localTimeToEorzea(nextMoonStartLocalDate));
+        const clock = calcEorzeaClock(nextMoonStartLocalDate);
         // 把时间规整到月相起始日的ET时间
         let etOffset = clock.eorzeaTime;
         etOffset -= clock.millisecond;
@@ -373,6 +373,33 @@ function findNextTimeByCondWithoutCD(
           etRangeStart += 24 * 60 * 60 * 1000;
           etRangeEnd += 24 * 60 * 60 * 1000;
         }
+      }
+      return result;
+    } else {
+      /** @type {{date: Date, duration: number}[]} */
+      const result = [];
+      const nowEorzea = localTimeToEorzea(now);
+      const clock = calcEorzeaClock(nowEorzea);
+      // 把时间规整到当前日的指定ET时间
+      let etOffset = clock.eorzeaTime;
+      etOffset -= clock.millisecond;
+      etOffset -= clock.second * 1000;
+      etOffset -= clock.minute * 60 * 1000;
+      etOffset -= clock.hour * 60 * 60 * 1000;
+      etOffset += Math.floor(cond.etRange[0] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[0] % 100) * 60 * 1000;
+      let etRangeStart = etOffset;
+      etOffset += Math.floor(cond.etRange[1] / 100) * 60 * 60 * 1000 + Math.floor(cond.etRange[1] % 100) * 60 * 1000;
+      let etRangeEnd = etOffset;
+      while (etRangeEnd <= nowEorzea.getTime()) {
+        etRangeStart += 24 * 60 * 60 * 1000;
+        etRangeEnd += 24 * 60 * 60 * 1000;
+      }
+      while (count > 0 && maxLocalDate.getTime() > etRangeStart) {
+        const date = eorzeaTimeToLocal(new Date(etRangeStart));
+        result.push({ date: date, duration: Math.round(eorzeaTimeToLocal(etRangeEnd - etRangeStart)) });
+        count--;
+        etRangeStart += 24 * 60 * 60 * 1000;
+        etRangeEnd += 24 * 60 * 60 * 1000;
       }
       return result;
     }
