@@ -1,7 +1,7 @@
 import { describe, expect, jest, test } from '@jest/globals';
 import { findNextTimeByCond } from '../index.js';
 
-describe('findNextTimeByCond', () => {
+describe('计算窗口期', () => {
 
   test('S怪：厌忌之人 奇里格', () => {
     jest.useFakeTimers().setSystemTime(new Date('2024-11-12'));
