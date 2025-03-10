@@ -111,12 +111,10 @@ function getEtNumber(hour, minute, allow2400 = false) {
 
 /**
  * 在指定的天气列表中过滤符合指定ET的天气
- * @param now {Date} 当前时间，会过滤掉所有当前时间之前的天气
  * @param weathers {{ date: Date; weather: string }[]}
  * @param etRange {[number, number]=}
  */
 function getFilterWeathers(
-  now,
   weathers,
   etRange,
 ) {
@@ -137,12 +135,11 @@ function getFilterWeathers(
         }
       }
     })
-    .filter(it => !!it)
-    .filter(it => it.date.getTime() >= now.getTime());
+    .filter(it => !!it);
 }
 
 /**
- * 寻找未来的窗口期
+ * 寻找未来的窗口期，如果当前在窗口期中，则返回数组的第一个值会在当前时间之前(即当前窗口期的起始时间)
  *
  * @param {{ etRange?: [number, number], weather?: WeatherCond, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
  * @param {number=} cooldown 冷却时间，冷却时间内即使到了窗口期也不会触发，单位：秒
@@ -162,11 +159,14 @@ export function findNextTimeByCond(
   cooldown = cooldown > 0 ? cooldown * 1000 : 0;
   /** @type {{ date: Date, duration: number }[]} */
   let finalResult = [];
-  let timeOffset = now;
+  let timeOffset = now ?? new Date();
   let lastTime = 0;
   while (finalResult.length < count) {
     const rawResult = findNextTimeByCondWithoutCD(cond, count, maxLocalDate, timeOffset);
     const filteredResult = rawResult.reduce((acc, curr) => {
+      if ((curr.date.getTime() + curr.duration) < timeOffset.getTime()) {
+        return acc;
+      }
       if ((curr.date.getTime() - lastTime) > cooldown) {
         lastTime = curr.date.getTime();
         let mergeWindow = false;
@@ -192,7 +192,7 @@ export function findNextTimeByCond(
 }
 
 /**
- * 寻找未来的窗口期，不考虑CD
+ * 寻找未来的窗口期，不考虑CD，如果当前在窗口期中，则返回数组的第一个值会在当前时间之前(即当前窗口期的起始时间)
  *
  * @param {{ etRange?: [number, number], weather?: WeatherCond, loc?: string, moon?: string }} cond 窗口期条件，必须至少有一个条件，其中etRange不能跨天(即必须左值小于右值)，et的取值范围为0000-2400，指定了weather时必须同时指定loc
  * @param {number=} count 要寻找几个窗口期，默认为1
@@ -280,7 +280,7 @@ function findNextTimeByCondWithoutCD(
         dateOffset = new Date(nextMoonEndLocalDate.getTime() + 1000);
         const weathers = findNextWeatherTime(nextMoonStartLocalDate, loc, cond.weather, count, nextMoonEndLocalDate);
         if (weathers && weathers.length > 0) {
-          const filterWeathers = getFilterWeathers(now, weathers, cond.etRange);
+          const filterWeathers = getFilterWeathers(weathers, cond.etRange);
           if (filterWeathers.length > 0) {
             result.push(...filterWeathers.map(it => {
               const weatherEndTime = getWeatherEndLocalTime(it.date);
@@ -308,7 +308,7 @@ function findNextTimeByCondWithoutCD(
         dateOffset = localTimeToEorzea(weathers[weathers.length - 1].date);
         dateOffset.setUTCHours(dateOffset.getUTCHours() + 8);
         dateOffset = eorzeaTimeToLocal(new Date(dateOffset.getTime() + 1000));
-        const filterWeathers = getFilterWeathers(now, weathers, cond.etRange);
+        const filterWeathers = getFilterWeathers(weathers, cond.etRange);
         if (filterWeathers.length > 0) {
           result.push(...filterWeathers.map(it => {
             const weatherEndTime = getWeatherEndLocalTime(it.date);
